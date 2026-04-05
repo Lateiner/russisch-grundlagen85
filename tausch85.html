@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synonym-Tausch: БЫТЬ zu ЯВЛЯТЬСЯ</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .instructions {
+            background: #eef2f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            border-left: 5px solid var(--accent-color);
+        }
+
+        /* Der Textbereich */
+        .text-content {
+            line-height: 2.2;
+            font-size: 1.15rem;
+            margin-bottom: 30px;
+            text-align: justify;
+        }
+
+        .gap {
+            display: inline-block;
+            min-width: 120px;
+            height: 30px;
+            border-bottom: 2px solid var(--accent-color);
+            background: #f0f0f0;
+            margin: 0 5px;
+            vertical-align: middle;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            transition: background 0.2s;
+        }
+
+        .gap.selected {
+            background: #d1ecf1;
+            border-bottom-color: var(--primary-color);
+        }
+
+        /* Wort-Bank */
+        .word-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 20px;
+            background: #f1f2f6;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .word-card {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid var(--accent-color);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            font-weight: bold;
+        }
+
+        .word-card.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        /* Feedback */
+        .correct { 
+            color: white !important; 
+            background-color: var(--success-color) !important; 
+            border-bottom: none !important;
+        }
+        .incorrect { 
+            color: white !important; 
+            background-color: var(--error-color) !important; 
+            border-bottom: none !important;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+        }
+
+        .sol-btn { background-color: #34495e; }
+        .reset-btn { background-color: #95a5a6; }
+
+        @media (max-width: 600px) {
+            .text-content { font-size: 1rem; line-height: 2.5; }
+            .gap { min-width: 100px; }
+            .container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Offizieller Bericht: БЫТЬ → ЯВЛЯТЬСЯ</h1>
+    
+    <div class="instructions">
+        Ersetze die Formen von БЫТЬ durch die passenden Formen von ЯВЛЯТЬСЯ, um den Text offizieller zu gestalten. Klicke zuerst ein Wort unten an und dann die passende Lücke im Text.
+    </div>
+
+    <div class="text-content" id="main-text">
+        В 2023 году господин Иванов <span class="gap" data-answer="являлся"></span> директором нашего филиала. 
+        Эта должность <span class="gap" data-answer="являлась"></span> крайне ответственной. 
+        В настоящее время он <span class="gap" data-answer="является"></span> ведущим экспертом в компании. 
+        Его предложения по развитию <span class="gap" data-answer="являлись"></span> основой для нового плана. 
+        Данное решение <span class="gap" data-answer="являлось"></span> важным этапом нашей работы.
+    </div>
+
+    <div class="word-bank" id="word-bank">
+        <!-- Worte werden per JS gemischt eingefügt -->
+    </div>
+
+    <div class="controls">
+        <button class="sol-btn" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="reset-btn" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const options = ["являлся", "являлась", "является", "являлись", "являлось"];
+    let currentSelectedWord = null;
+
+    function initGame() {
+        const bank = document.getElementById('word-bank');
+        bank.innerHTML = '';
+        
+        // Optionen mischen
+        const shuffled = [...options].sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach(word => {
+            const btn = document.createElement('div');
+            btn.className = 'word-card';
+            btn.textContent = word;
+            btn.onclick = () => selectWord(word, btn);
+            bank.appendChild(btn);
+        });
+
+        // Gaps zurücksetzen
+        document.querySelectorAll('.gap').forEach(gap => {
+            gap.textContent = '';
+            gap.className = 'gap';
+        });
+        currentSelectedWord = null;
+    }
+
+    function selectWord(word, element) {
+        document.querySelectorAll('.word-card').forEach(el => el.classList.remove('active'));
+        currentSelectedWord = word;
+        element.classList.add('active');
+    }
+
+    // Lücken-Klick Logik
+    document.querySelectorAll('.gap').forEach(gap => {
+        gap.onclick = () => {
+            if (!currentSelectedWord) return;
+            
+            gap.textContent = currentSelectedWord;
+            const correctAnswer = gap.getAttribute('data-answer');
+            
+            if (currentSelectedWord === correctAnswer) {
+                gap.className = 'gap correct';
+            } else {
+                gap.className = 'gap incorrect';
+            }
+            
+            // Auswahl nach dem Setzen aufheben
+            currentSelectedWord = null;
+            document.querySelectorAll('.word-card').forEach(el => el.classList.remove('active'));
+        };
+    });
+
+    function showSolution() {
+        document.querySelectorAll('.gap').forEach(gap => {
+            const correct = gap.getAttribute('data-answer');
+            gap.textContent = correct;
+            gap.className = 'gap correct';
+        });
+    }
+
+    function resetGame() {
+        initGame();
+    }
+
+    initGame();
+</script>
+
+</body>
+</html>
