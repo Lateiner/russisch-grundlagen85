@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aktiv vs. Reflexiv: ПРОЯВЛЯТЬ(СЯ)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-style: normal;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            font-style: normal;
+        }
+
+        .instructions {
+            background: #eef2f3;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-size: 1rem;
+            line-height: 1.5;
+            border-left: 5px solid var(--accent-color);
+            font-style: normal;
+        }
+
+        .exercise-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sentence-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-style: normal;
+        }
+
+        .sentence-text {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: block;
+            font-style: normal;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .choice-btn {
+            padding: 8px 16px;
+            font-size: 1rem;
+            background: white;
+            border: 2px solid var(--accent-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-style: normal;
+            color: var(--primary-color);
+        }
+
+        .choice-btn:hover:not(.disabled) {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        /* Feedback Styles */
+        .choice-btn.correct {
+            background-color: var(--success-color) !important;
+            border-color: var(--success-color) !important;
+            color: white !important;
+        }
+
+        .choice-btn.incorrect {
+            background-color: var(--error-color) !important;
+            border-color: var(--error-color) !important;
+            color: white !important;
+        }
+
+        .choice-btn.disabled {
+            cursor: default;
+            opacity: 0.6;
+        }
+
+        .choice-btn.correct.disabled {
+            opacity: 1;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .main-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            font-size: 1rem;
+            font-style: normal;
+        }
+
+        .sol-btn { background-color: #34495e; }
+        .reset-btn { background-color: #95a5a6; }
+
+        @media (max-width: 600px) {
+            .container { padding: 15px; }
+            .choice-btn { width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Aktiv oder Reflexiv?</h1>
+    
+    <div class="instructions">
+        Wähle die richtige Verbform aus. Klicke auf den Button, der in den Satz passt. Du erhältst sofort eine Rückmeldung.
+    </div>
+
+    <div id="exercise-list" class="exercise-list">
+        <!-- JS generiert hier die 10 Aufgaben -->
+    </div>
+
+    <div class="controls">
+        <button class="main-btn sol-btn" onclick="showAll()">Lösungen anzeigen</button>
+        <button class="main-btn reset-btn" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const exerciseData = [
+        { id: 0, part1: "У него", part2: "таланты.", opt1: "проявили", opt2: "проявились", correct: "opt2" },
+        { id: 1, part1: "Мальчик", part2: "смелость.", opt1: "проявил", opt2: "проявился", correct: "opt1" },
+        { id: 2, part1: "Весной у людей", part2: "аллергия.", opt1: "проявляет", opt2: "проявляется", correct: "opt2" },
+        { id: 3, part1: "Преподаватель", part2: "понимание.", opt1: "проявил", opt2: "проявился", correct: "opt1" },
+        { id: 4, part1: "В фотолаборатории", part2: "плёнку.", opt1: "проявили", opt2: "проявились", correct: "opt1" },
+        { id: 5, part1: "На лице", part2: "радость.", opt1: "проявила", opt2: "проявилась", correct: "opt2" },
+        { id: 6, part1: "Он часто", part2: "интерес к науке.", opt1: "проявляет", opt2: "проявляется", correct: "opt1" },
+        { id: 7, part1: "В темноте", part2: "очертания дома.", opt1: "проявили", opt2: "проявились", correct: "opt2" },
+        { id: 8, part1: "Друг", part2: "терпение.", opt1: "проявил", opt2: "проявился", correct: "opt1" },
+        { id: 9, part1: "С возрастом", part2: "его характер.", opt1: "проявил", opt2: "проявился", correct: "opt2" }
+    ];
+
+    function renderExercises() {
+        const container = document.getElementById('exercise-list');
+        container.innerHTML = '';
+
+        exerciseData.forEach((item) => {
+            const div = document.createElement('div');
+            div.className = 'sentence-item';
+            div.innerHTML = `
+                <span class="sentence-text">${item.part1} _______ ${item.part2}</span>
+                <div class="button-group">
+                    <button class="choice-btn" id="btn-${item.id}-opt1" onclick="handleChoice(${item.id}, 'opt1')">${item.opt1}</button>
+                    <button class="choice-btn" id="btn-${item.id}-opt2" onclick="handleChoice(${item.id}, 'opt2')">${item.opt2}</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function handleChoice(id, choice) {
+        const item = exerciseData[id];
+        const btn1 = document.getElementById(`btn-${id}-opt1`);
+        const btn2 = document.getElementById(`btn-${id}-opt2`);
+        const selectedBtn = document.getElementById(`btn-${id}-${choice}`);
+
+        // Deaktiviere beide Buttons in dieser Gruppe
+        btn1.classList.add('disabled');
+        btn2.classList.add('disabled');
+        btn1.onclick = null;
+        btn2.onclick = null;
+
+        if (choice === item.correct) {
+            selectedBtn.classList.add('correct');
+        } else {
+            selectedBtn.classList.add('incorrect');
+            // Richtige Antwort hervorheben
+            document.getElementById(`btn-${id}-${item.correct}`).classList.add('correct');
+        }
+    }
+
+    function showAll() {
+        exerciseData.forEach(item => {
+            handleChoice(item.id, item.correct);
+        });
+    }
+
+    function resetGame() {
+        renderExercises();
+    }
+
+    // Initialisierung
+    renderExercises();
+</script>
+
+</body>
+</html>
