@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kollokations-Rätsel: Mix-Edition</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f0f4f8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-style: normal;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-style: normal;
+        }
+
+        .instructions {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 1rem;
+            line-height: 1.5;
+            text-align: center;
+            border-top: 4px solid var(--accent-color);
+            font-style: normal;
+        }
+
+        /* Quiz Karten */
+        .quiz-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 25px;
+            font-style: normal;
+        }
+
+        .scene-header {
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            font-style: normal;
+            letter-spacing: 1px;
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            font-weight: 500;
+            font-style: normal;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            font-style: normal;
+        }
+
+        .option-btn {
+            background: #fff;
+            border: 2px solid #eee;
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: var(--primary-color);
+            font-style: normal;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            border-color: var(--accent-color);
+            background-color: #f7fbff;
+            transform: translateY(-2px);
+        }
+
+        .option-btn span.icon {
+            font-size: 2.2rem;
+            font-style: normal;
+        }
+
+        .option-btn span.label {
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        /* Feedback Styles */
+        .option-btn.correct {
+            background-color: var(--success-color) !important;
+            border-color: var(--success-color) !important;
+            color: white !important;
+        }
+
+        .option-btn.incorrect {
+            background-color: var(--error-color) !important;
+            border-color: var(--error-color) !important;
+            color: white !important;
+        }
+
+        .option-btn.disabled {
+            cursor: default;
+        }
+
+        /* Controls */
+        .controls {
+            margin: 20px 0 50px 0;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-reset {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            background-color: #34495e;
+            font-size: 1rem;
+            font-style: normal;
+            transition: opacity 0.2s;
+        }
+
+        .btn-reset:hover { opacity: 0.9; }
+
+        @media (max-width: 500px) {
+            .options-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 1.3rem; }
+            .option-btn { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Was können wir ПРОЯВИТЬ?</h1>
+    
+    <div class="instructions">
+        Wähle das passende Substantiv für das Verb <strong>ПРОЯВИТЬ</strong>. Die Szenen und die Antworten werden bei jedem Start neu gemischt.
+    </div>
+
+    <div id="quiz-container">
+        <!-- JS generiert hier die gemischten Aufgaben -->
+    </div>
+
+    <div class="controls">
+        <button class="btn-reset" onclick="resetGame()">Neu mischen & Starten</button>
+    </div>
+</div>
+
+<script>
+    const originalQuizData = [
+        {
+            scene: "Fotografie",
+            question: "Что мы проявляем в фотолаборатории?",
+            options: [
+                { text: "плёнка", icon: "🎞️", correct: true },
+                { text: "телефон", icon: "📱", correct: false }
+            ]
+        },
+        {
+            scene: "Gefahr",
+            question: "Что проявил мальчик, спасая кошку?",
+            options: [
+                { text: "смелость", icon: "🛡️", correct: true },
+                { text: "яблоко", icon: "🍎", correct: false }
+            ]
+        },
+        {
+            scene: "Empathie",
+            question: "Что проявил учитель к больному ученику?",
+            options: [
+                { text: "понимание", icon: "🤝", correct: true },
+                { text: "обувь", icon: "👟", correct: false }
+            ]
+        },
+        {
+            scene: "Neugier",
+            question: "Что проявил студент к новой лекции?",
+            options: [
+                { text: "интерес", icon: "💡", correct: true },
+                { text: "бутерброд", icon: "🥪", correct: false }
+            ]
+        },
+        {
+            scene: "Charakterstärken",
+            question: "Что нужно проявить, стоя в длинной очереди?",
+            options: [
+                { text: "терпение", icon: "⏳", correct: true },
+                { text: "ключ", icon: "🔑", correct: false }
+            ]
+        }
+    ];
+
+    // Fisher-Yates Shuffle Funktion
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = '';
+
+        // 1. Die Szenen selbst mischen
+        const shuffledScenes = shuffle([...originalQuizData]);
+
+        shuffledScenes.forEach((data, qIndex) => {
+            const card = document.createElement('div');
+            card.className = 'quiz-card';
+
+            // 2. Die Antwortmöglichkeiten innerhalb der Szene mischen
+            const shuffledOptions = shuffle([...data.options]);
+
+            let optionsHtml = '<div class="options-grid">';
+            shuffledOptions.forEach((opt, oIndex) => {
+                optionsHtml += `
+                    <button class="option-btn" 
+                            id="btn-${qIndex}-${oIndex}" 
+                            data-correct="${opt.correct}"
+                            onclick="checkAnswer(${qIndex}, ${oIndex})">
+                        <span class="icon">${opt.icon}</span>
+                        <span class="label">${opt.text}</span>
+                    </button>
+                `;
+            });
+            optionsHtml += '</div>';
+
+            card.innerHTML = `
+                <div class="scene-header">${data.scene}</div>
+                <div class="question-text">${data.question}</div>
+                ${optionsHtml}
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function checkAnswer(qIndex, oIndex) {
+        const buttons = document.querySelectorAll(`[id^="btn-${qIndex}-"]`);
+        const selectedBtn = document.getElementById(`btn-${qIndex}-${oIndex}`);
+        const isCorrect = selectedBtn.getAttribute('data-correct') === "true";
+
+        // Alle Buttons dieser Karte deaktivieren
+        buttons.forEach(btn => {
+            btn.classList.add('disabled');
+            btn.onclick = null;
+            
+            // Die richtige Lösung immer markieren (falls der Nutzer falsch liegt)
+            if (btn.getAttribute('data-correct') === "true") {
+                btn.classList.add('correct');
+            }
+        });
+
+        // Falls die Wahl falsch war, diese rot markieren
+        if (!isCorrect) {
+            selectedBtn.classList.add('incorrect');
+        }
+    }
+
+    function resetGame() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        renderQuiz();
+    }
+
+    // Initialer Start
+    renderQuiz();
+</script>
+
+</body>
+</html>
