@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aspekt-Check: ПОЯВЛЯТЬСЯ vs. ПОЯВИТЬСЯ</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f0f4f8;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            background: #eef2f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border-left: 5px solid var(--accent-color);
+        }
+
+        .sentence-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sentence-item {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Styling für das Auswahlmenü im Text */
+        .aspekt-select {
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 5px 10px;
+            border: 2px solid var(--accent-color);
+            border-radius: 5px;
+            background-color: #fff;
+            cursor: pointer;
+            margin: 0 5px;
+            outline: none;
+            transition: all 0.3s;
+            color: var(--primary-color);
+        }
+
+        .aspekt-select.correct {
+            border-color: var(--success-color);
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .aspekt-select.incorrect {
+            border-color: var(--error-color);
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn-solution { background-color: #34495e; }
+        .btn-reset { background-color: #95a5a6; }
+        button:hover { opacity: 0.9; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container { padding: 15px; }
+            .sentence-item { font-size: 1rem; }
+            .aspekt-select { display: block; margin: 10px 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ПОЯВЛЯТЬСЯ vs. ПОЯВИТЬСЯ</h1>
+    
+    <div class="instructions">
+        Wähle in jedem Satz die korrekte Aspektform aus. Achte auf den Kontext (Gewohnheit vs. einmaliges Resultat). Du erhältst sofort eine Rückmeldung nach deiner Auswahl.
+    </div>
+
+    <div class="sentence-list" id="quiz">
+        <!-- Sätze werden per JS geladen -->
+    </div>
+
+    <div class="controls">
+        <button class="btn-solution" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn-reset" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const quizData = [
+        {
+            textBefore: "Каждое утро на небе",
+            textAfter: "солнце.",
+            options: ["появляется", "появится"],
+            correct: "появляется"
+        },
+        {
+            textBefore: "Вдруг на дороге",
+            textAfter: "кошка.",
+            options: ["появлялась", "появилась"],
+            correct: "появилась"
+        },
+        {
+            textBefore: "На следующей неделе у меня",
+            textAfter: "свободное время.",
+            options: ["будет появляться", "появится"],
+            correct: "появится"
+        },
+        {
+            textBefore: "Обычно новые слова",
+            textAfter: "в тексте несколько раз.",
+            options: ["появляются", "появятся"],
+            correct: "появляются"
+        },
+        {
+            textBefore: "Посмотри! На экране",
+            textAfter: "новая картинка.",
+            options: ["появлялась", "появилась"],
+            correct: "появилась"
+        },
+        {
+            textBefore: "Весь день шёл дождь, а сейчас",
+            textAfter: "солнце.",
+            options: ["появлялось", "появилось"],
+            correct: "появилось"
+        }
+    ];
+
+    function initQuiz() {
+        const quizContainer = document.getElementById('quiz');
+        quizContainer.innerHTML = '';
+
+        quizData.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'sentence-item';
+            
+            // Auswahlmenü erstellen
+            let selectHtml = `<select class="aspekt-select" id="select-${index}" onchange="checkAnswer(${index})">`;
+            selectHtml += `<option value="" disabled selected>---</option>`;
+            item.options.forEach(opt => {
+                selectHtml += `<option value="${opt}">${opt}</option>`;
+            });
+            selectHtml += `</select>`;
+
+            div.innerHTML = `${index + 1}. ${item.textBefore} ${selectHtml} ${item.textAfter}`;
+            quizContainer.appendChild(div);
+        });
+    }
+
+    function checkAnswer(index) {
+        const select = document.getElementById(`select-${index}`);
+        const selectedValue = select.value;
+        const correctAnswer = quizData[index].correct;
+
+        if (selectedValue === correctAnswer) {
+            select.className = 'aspekt-select correct';
+        } else {
+            select.className = 'aspekt-select incorrect';
+        }
+    }
+
+    function showSolution() {
+        quizData.forEach((item, index) => {
+            const select = document.getElementById(`select-${index}`);
+            select.value = item.correct;
+            select.className = 'aspekt-select correct';
+        });
+    }
+
+    function resetGame() {
+        initQuiz();
+    }
+
+    // Initialisierung beim Laden
+    initQuiz();
+</script>
+
+</body>
+</html>
