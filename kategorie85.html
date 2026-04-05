@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kategorisierung: Aktiv vs. Von selbst</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --active-btn: #3498db;
+            --spont-btn: #9b59b6;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --bg: #f0f4f8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-style: normal;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            font-size: 0.95rem;
+            color: #555;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        /* Aktuelle Phrase */
+        .phrase-display {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 40px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Kategorien-Buttons */
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .cat-btn {
+            padding: 20px 10px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: transform 0.2s, opacity 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cat-btn:active { transform: scale(0.95); }
+
+        .btn-active { background-color: var(--active-btn); }
+        .btn-spontaneous { background-color: var(--spont-btn); }
+
+        .btn-label { font-size: 0.8rem; font-weight: normal; opacity: 0.9; }
+
+        /* Feedback */
+        #feedback {
+            height: 30px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .correct-text { color: var(--success); }
+        .error-text { color: var(--error); }
+
+        /* Progress */
+        .progress {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        /* Controls */
+        .controls {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .reset-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Mobile */
+        @media (max-width: 500px) {
+            .button-grid { grid-template-columns: 1fr; }
+            .phrase-display { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Aktiv gesteuert oder von selbst?</h1>
+    
+    <div class="instructions">
+        Entscheide bei jeder Phrase: Handelt die Person bewusst (<strong>Aktiv</strong>) oder tritt ein Zustand ohne Kontrolle ein (<strong>Von selbst</strong>)?
+    </div>
+
+    <div class="phrase-display" id="phrase">
+        <!-- Wird per JS geladen -->
+    </div>
+
+    <div id="feedback"></div>
+
+    <div class="button-grid">
+        <button class="cat-btn btn-active" onclick="check('active')">
+            <span>Активно</span>
+            <span class="btn-label">(Aktiv gesteuert)</span>
+        </button>
+        <button class="cat-btn btn-spontaneous" onclick="check('spontaneous')">
+            <span>Само по себе</span>
+            <span class="btn-label">(Geschieht von selbst)</span>
+        </button>
+    </div>
+
+    <div class="progress" id="progress"></div>
+
+    <div class="controls">
+        <button class="reset-btn" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const quizData = [
+        { text: "проявить смелость", type: "active" },
+        { text: "проявился талант", type: "spontaneous" },
+        { text: "проявить понимание", type: "active" },
+        { text: "проявилась аллергия", type: "spontaneous" },
+        { text: "проявить интерес", type: "active" },
+        { text: "проявилась радость", type: "spontaneous" },
+        { text: "проявить плёнку", type: "active" },
+        { text: "проявился характер", type: "spontaneous" },
+        { text: "проявить терпение", type: "active" },
+        { text: "проявились очертания", type: "spontaneous" }
+    ];
+
+    let currentIndex = 0;
+    let canClick = true;
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function renderPhrase() {
+        if (currentIndex >= quizData.length) {
+            document.getElementById('phrase').textContent = "Fertig! Gut gemacht.";
+            document.querySelector('.button-grid').style.display = 'none';
+            document.getElementById('feedback').textContent = "";
+            return;
+        }
+        document.getElementById('phrase').textContent = quizData[currentIndex].text;
+        document.getElementById('progress').textContent = `Frage ${currentIndex + 1} von ${quizData.length}`;
+        document.getElementById('feedback').textContent = "";
+        canClick = true;
+    }
+
+    function check(userChoice) {
+        if (!canClick) return;
+        canClick = false;
+
+        const correctChoice = quizData[currentIndex].type;
+        const feedbackEl = document.getElementById('feedback');
+
+        if (userChoice === correctChoice) {
+            feedbackEl.textContent = "Richtig!";
+            feedbackEl.className = "correct-text";
+        } else {
+            feedbackEl.textContent = "Falsch!";
+            feedbackEl.className = "error-text";
+        }
+
+        setTimeout(() => {
+            currentIndex++;
+            renderPhrase();
+        }, 1000);
+    }
+
+    function resetGame() {
+        currentIndex = 0;
+        shuffle(quizData);
+        document.querySelector('.button-grid').style.display = 'grid';
+        renderPhrase();
+    }
+
+    // Start
+    shuffle(quizData);
+    renderPhrase();
+</script>
+
+</body>
+</html>
