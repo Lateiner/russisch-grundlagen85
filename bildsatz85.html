@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bild-Satz-Zuordnung: 8 Szenen (Zufallsmix)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            text-align: center;
+            border-left: 6px solid var(--accent-color);
+        }
+
+        .quiz-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .scene-box {
+            width: 100%;
+            background: #fdfdfd;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .scene-box span {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+        }
+
+        .scene-description {
+            font-weight: 600;
+            color: #444;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        .options-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: white;
+            border: 2px solid #eee;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.05rem;
+            text-align: center;
+            transition: all 0.2s ease;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .option-btn:hover:not(.disabled) {
+            border-color: var(--accent-color);
+            background-color: #f0f7ff;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda !important;
+            border-color: var(--success-color) !important;
+            color: #155724;
+        }
+
+        .option-btn.incorrect {
+            background-color: #f8d7da !important;
+            border-color: var(--error-color) !important;
+            color: #721c24;
+        }
+
+        .option-btn.disabled {
+            cursor: default;
+        }
+
+        .controls {
+            margin: 20px 0 50px 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button.control-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            min-width: 160px;
+        }
+
+        .btn-sol { background-color: #34495e; }
+        .btn-reset { background-color: #95a5a6; }
+
+        @media (max-width: 500px) {
+            .scene-box span { font-size: 2.8rem; }
+            .option-btn { font-size: 0.95rem; }
+            button.control-btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Erscheinen & Ankommen</h1>
+    
+    <div class="instructions">
+        Wähle den passenden Satz zur Szene. Die Reihenfolge der Aufgaben und Antworten wird bei jedem Neustart neu gemischt.
+    </div>
+
+    <div id="quiz-container"></div>
+
+    <div class="controls">
+        <button class="control-btn btn-sol" onclick="showAllSolutions()">Lösung anzeigen</button>
+        <button class="control-btn btn-reset" onclick="resetGame()">Neu mischen</button>
+    </div>
+</div>
+
+<script>
+    const originalQuizData = [
+        {
+            icon: "☁️☀️",
+            description: "Nach einem grauen Vormittag kommt die Sonne hinter den Wolken hervor.",
+            options: [
+                { text: "Солнце появилось.", correct: true },
+                { text: "Солнце исчезло.", correct: false },
+                { text: "Солнце явилось.", correct: false }
+            ]
+        },
+        {
+            icon: "🏢💼",
+            description: "Ein Mitarbeiter erscheint pünktlich an seinem Arbeitsplatz (formeller Kontext).",
+            options: [
+                { text: "Сотрудник явился на работу.", correct: true },
+                { text: "Сотрудник ушёл.", correct: false },
+                { text: "Сотрудник появился на работе.", correct: false }
+            ]
+        },
+        {
+            icon: "📱💬",
+            description: "Plötzlich wird eine neue Nachricht auf dem Bildschirm sichtbar.",
+            options: [
+                { text: "Сообщение появилось auf dem Bildschirm.", correct: true },
+                { text: "Сообщение исчезло.", correct: false },
+                { text: "Сообщение явилось на экран.", correct: false }
+            ]
+        },
+        {
+            icon: "🏫❌",
+            description: "Ein Student fehlt regelmäßig und kommt nicht zum Unterricht.",
+            options: [
+                { text: "Студент не является на занятия.", correct: true },
+                { text: "Студент не появляется на занятия.", correct: false },
+                { text: "Студент не был дома.", correct: false }
+            ]
+        },
+        {
+            icon: "🐈📦",
+            description: "Unerwartet springt eine Katze aus einem Karton hervor.",
+            options: [
+                { text: "Вдруг появилась кошка.", correct: true },
+                { text: "Кошка исчезла.", correct: false },
+                { text: "Кошка явилась.", correct: false }
+            ]
+        },
+        {
+            icon: "🌧️🌈",
+            description: "Nach dem Regen wird am Himmel ein Regenbogen sichtbar.",
+            options: [
+                { text: "Радуга появилась.", correct: true },
+                { text: "Радуга исчезла.", correct: false },
+                { text: "Радуga светила.", correct: false }
+            ]
+        },
+        {
+            icon: "👮📜",
+            description: "Ein Bürger muss offiziell bei der Polizei zur Befragung erscheinen.",
+            options: [
+                { text: "Он должен явиться в полицию.", correct: true },
+                { text: "Он должен появиться в полиции.", correct: false },
+                { text: "Он ушёл aus der Polizei.", correct: false }
+            ]
+        },
+        {
+            icon: "📅⏳",
+            description: "Nächste Woche wird er endlich freie Zeit in seinem Kalender haben.",
+            options: [
+                { text: "На следующей неделе у него появится время.", correct: true },
+                { text: "У него нет времени.", correct: false },
+                { text: "Время исчезнет.", correct: false }
+            ]
+        }
+    ];
+
+    let currentShuffledData = [];
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function renderQuiz() {
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = '';
+
+        // 1. Fragen mischen
+        currentShuffledData = shuffleArray([...originalQuizData]);
+
+        currentShuffledData.forEach((data, qIndex) => {
+            const card = document.createElement('div');
+            card.className = 'quiz-card';
+
+            // 2. Antwortoptionen für diese Frage mischen
+            const shuffledOptions = shuffleArray([...data.options]);
+
+            let optionsHtml = '<div class="options-list">';
+            shuffledOptions.forEach((opt, oIndex) => {
+                // Wir speichern im Datensatz des Buttons, ob er korrekt ist
+                optionsHtml += `
+                    <button class="option-btn" 
+                            id="btn-${qIndex}-${oIndex}" 
+                            data-correct="${opt.correct}"
+                            onclick="checkAnswer(${qIndex}, ${oIndex})">
+                        ${opt.text}
+                    </button>
+                `;
+            });
+            optionsHtml += '</div>';
+
+            card.innerHTML = `
+                <div class="scene-box">
+                    <span>${data.icon}</span>
+                    <div class="scene-description">,,${data.description}"</div>
+                </div>
+                ${optionsHtml}
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function checkAnswer(qIndex, oIndex) {
+        const buttons = document.querySelectorAll(`[id^="btn-${qIndex}-"]`);
+        const selectedBtn = document.getElementById(`btn-${qIndex}-${oIndex}`);
+        const isCorrect = selectedBtn.getAttribute('data-correct') === "true";
+
+        buttons.forEach(btn => {
+            btn.classList.add('disabled');
+            btn.onclick = null; // Klicks unterbinden
+            
+            // Richtige Antwort immer grün zeigen, wenn falsch geklickt wurde
+            if (btn.getAttribute('data-correct') === "true") {
+                btn.classList.add('correct');
+            }
+        });
+
+        if (!isCorrect) {
+            selectedBtn.classList.add('incorrect');
+        }
+    }
+
+    function showAllSolutions() {
+        const allButtons = document.querySelectorAll('.option-btn');
+        allButtons.forEach(btn => {
+            btn.classList.add('disabled');
+            btn.onclick = null;
+            if (btn.getAttribute('data-correct') === "true") {
+                btn.classList.add('correct');
+            } else {
+                btn.classList.remove('incorrect'); // Reset falls vorher falsch geklickt
+            }
+        });
+    }
+
+    function resetGame() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        renderQuiz();
+    }
+
+    // Initialer Start
+    renderQuiz();
+</script>
+
+</body>
+</html>
