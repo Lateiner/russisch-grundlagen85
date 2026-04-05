@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fehlersuche: Der richtige Stil</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-style: normal; /* Sicherstellen, dass nichts kursiv ist */
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            font-style: normal;
+        }
+
+        .instructions {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            font-size: 1rem;
+            line-height: 1.5;
+            border-left: 5px solid var(--error-color);
+            font-style: normal;
+        }
+
+        .sentence-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .sentence-card {
+            background: white;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.05rem;
+            color: var(--primary-color);
+            user-select: none;
+            font-style: normal;
+        }
+
+        .sentence-card:hover:not(.disabled) {
+            border-color: var(--accent-color);
+            background-color: #f9f9f9;
+        }
+
+        /* Feedback-Styles */
+        /* Grün, wenn der Schüler den Fehler erfolgreich identifiziert hat */
+        .sentence-card.is-error-found {
+            border-color: var(--success-color);
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        /* Rot, wenn der Schüler einen korrekten Satz fälschlicherweise als Fehler markiert hat */
+        .sentence-card.is-not-an-error {
+            border-color: var(--error-color);
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .sentence-card.disabled {
+            cursor: default;
+        }
+
+        .icon {
+            font-size: 1.2rem;
+            min-width: 25px;
+            font-style: normal;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+            font-size: 1rem;
+            font-style: normal;
+        }
+
+        .btn-sol { background-color: #34495e; }
+        .btn-reset { background-color: #95a5a6; }
+        button:hover { opacity: 0.9; }
+
+        @media (max-width: 600px) {
+            .sentence-card { font-size: 1rem; padding: 12px; }
+            h1 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Fehlersuche: ЯВИТЬСЯ im richtigen Stil</h1>
+    
+    <div class="instructions">
+        Das Verb ЯВИТЬСЯ wird offiziell gebraucht (Arbeit, Behörde). In der Alltagssprache oder bei Naturbeschreibungen ist es oft falsch (dort nutzt man besser: прийти oder появиться). 
+        <br><br>
+        Klicke auf alle Sätze, die einen FEHLER enthalten.
+    </div>
+
+    <div id="sentence-container" class="sentence-list"></div>
+
+    <div class="controls">
+        <button class="btn-sol" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn-reset" onclick="resetGame()">Neu mischen</button>
+    </div>
+</div>
+
+<script>
+    const sentencesData = [
+        { text: "Я явился к маме на обед.", isWrong: true },
+        { text: "Вчера солнце явилось в небе.", isWrong: true },
+        { text: "Кошка явилась из-за дерева.", isWrong: true },
+        { text: "Явись ко мне в гости вечером!", isWrong: true },
+        { text: "Сотрудник явился на совещание вовремя.", isWrong: false },
+        { text: "Студент не явился на экзамен.", isWrong: false },
+        { text: "Он обязан явиться в полицию в 10:00.", isWrong: false },
+        { text: "На урок не явились три человека.", isWrong: false }
+    ];
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function renderSentences() {
+        const container = document.getElementById('sentence-container');
+        container.innerHTML = '';
+        
+        const shuffled = shuffle([...sentencesData]);
+
+        shuffled.forEach((s, index) => {
+            const card = document.createElement('div');
+            card.className = 'sentence-card';
+            card.id = 'sentence-' + index;
+            card.innerHTML = `<span class="icon" id="icon-${index}">❓</span> <span>${s.text}</span>`;
+            
+            // Wir speichern die Information direkt im Element-Objekt
+            card.onclick = () => {
+                if (card.classList.contains('disabled')) return;
+                
+                card.classList.add('disabled');
+                if (s.isWrong) {
+                    card.classList.add('is-error-found');
+                    document.getElementById('icon-' + index).textContent = '✅';
+                } else {
+                    card.classList.add('is-not-an-error');
+                    document.getElementById('icon-' + index).textContent = '❌';
+                }
+            };
+            
+            container.appendChild(card);
+        });
+    }
+
+    function showSolution() {
+        // Alle Karten finden, die einen Fehler enthalten, aber noch nicht gefunden wurden
+        const cards = document.querySelectorAll('.sentence-card');
+        
+        cards.forEach(card => {
+            const textContent = card.querySelector('span:last-child').textContent;
+            const original = sentencesData.find(d => d.text === textContent);
+            
+            if (original.isWrong) {
+                card.classList.add('is-error-found', 'disabled');
+                card.querySelector('.icon').textContent = '⚠️';
+            } else {
+                card.classList.remove('is-not-an-error');
+                card.classList.add('disabled');
+                card.querySelector('.icon').textContent = '—';
+            }
+        });
+    }
+
+    function resetGame() {
+        renderSentences();
+    }
+
+    // Initialer Start beim Laden der Seite
+    renderSentences();
+</script>
+
+</body>
+</html>
