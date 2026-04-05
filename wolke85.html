@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wortwolke: Kollokationen mit ПРОЯВИТЬ</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-style: normal;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            font-style: normal;
+        }
+
+        .instructions {
+            background: #eef2f3;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-size: 1rem;
+            line-height: 1.5;
+            border-left: 5px solid var(--accent-color);
+            font-style: normal;
+            text-align: left;
+        }
+
+        /* Wortwolke Design */
+        .word-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #ffffff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            min-height: 200px;
+        }
+
+        .word-item {
+            padding: 10px 20px;
+            background: #f1f2f6;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            transition: all 0.3s ease;
+            user-select: none;
+            border: 2px solid transparent;
+            font-style: normal;
+        }
+
+        .word-item:hover {
+            transform: scale(1.1);
+            border-color: var(--accent-color);
+        }
+
+        /* Feedback Zustände */
+        .word-item.correct {
+            background-color: var(--success-color) !important;
+            color: white !important;
+            border-color: var(--success-color);
+        }
+
+        .word-item.incorrect {
+            background-color: var(--error-color) !important;
+            color: white !important;
+            border-color: var(--error-color);
+        }
+
+        /* Status & Controls */
+        .status {
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+            font-style: normal;
+        }
+
+        .btn-sol { background-color: #34495e; }
+        .btn-reset { background-color: #95a5a6; }
+        .btn:hover { opacity: 0.9; }
+
+        @media (max-width: 600px) {
+            .word-item { font-size: 1rem; padding: 8px 15px; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Kollokationen mit ПРОЯВИТЬ</h1>
+    
+    <div class="instructions">
+        Das Verb <strong>ПРОЯВИТЬ</strong> wird oft mit abstrakten Substantiven (Eigenschaften, Gefühlen) verwendet. 
+        Welche dieser Wörter passen dazu? Klicke sie an!
+    </div>
+
+    <div id="status" class="status">Gefunden: 0 / 8</div>
+
+    <div id="word-cloud" class="word-cloud">
+        <!-- Wörter werden per JS geladen -->
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-sol" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn btn-reset" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const words = [
+        { text: "смелость", valid: true },
+        { text: "понимание", valid: true },
+        { text: "интерес", valid: true },
+        { text: "терпение", valid: true },
+        { text: "заботу", valid: true },
+        { text: "внимание", valid: true },
+        { text: "инициативу", valid: true },
+        { text: "настойчивость", valid: true },
+        { text: "молоко", valid: false },
+        { text: "синий", valid: false },
+        { text: "погода", valid: false },
+        { text: "яблоко", valid: false },
+        { text: "книга", valid: false },
+        { text: "быстро", valid: false },
+        { text: "телефон", valid: false },
+        { text: "спать", valid: false }
+    ];
+
+    let foundCount = 0;
+    const totalCorrect = words.filter(w => w.valid).length;
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function initCloud() {
+        const cloud = document.getElementById('word-cloud');
+        cloud.innerHTML = '';
+        foundCount = 0;
+        updateStatus();
+        
+        const shuffledWords = shuffle([...words]);
+
+        shuffledWords.forEach((word, index) => {
+            const span = document.createElement('span');
+            span.className = 'word-item';
+            span.textContent = word.text;
+            span.onclick = () => checkWord(span, word);
+            cloud.appendChild(span);
+        });
+    }
+
+    function checkWord(element, wordData) {
+        if (element.classList.contains('correct') || element.classList.contains('incorrect')) return;
+
+        if (wordData.valid) {
+            element.classList.add('correct');
+            foundCount++;
+            updateStatus();
+        } else {
+            element.classList.add('incorrect');
+        }
+    }
+
+    function updateStatus() {
+        document.getElementById('status').textContent = `Gefunden: ${foundCount} / ${totalCorrect}`;
+        if (foundCount === totalCorrect) {
+            document.getElementById('status').textContent = "Hervorragend! Alle passenden Wörter gefunden.";
+        }
+    }
+
+    function showSolution() {
+        const items = document.querySelectorAll('.word-item');
+        items.forEach(item => {
+            const wordData = words.find(w => w.text === item.textContent);
+            if (wordData.valid) {
+                item.classList.add('correct');
+            } else {
+                item.classList.remove('incorrect');
+                item.style.opacity = "0.3";
+                item.style.pointerEvents = "none";
+            }
+        });
+        foundCount = totalCorrect;
+        updateStatus();
+    }
+
+    function resetGame() {
+        initCloud();
+    }
+
+    // Initialisierung
+    initCloud();
+</script>
+
+</body>
+</html>
