@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stil-Check: Verwendung von ЯВЛЯТЬСЯ (Gemischt)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --accent-color: #3498db;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .instructions {
+            background: #eef2f3;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid var(--accent-color);
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .option-card {
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            font-size: 1rem;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .option-card:hover {
+            border-color: var(--accent-color);
+            transform: translateX(5px);
+        }
+
+        /* Feedback-Zustände */
+        .option-card.correct {
+            border-color: var(--success-color);
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .option-card.incorrect {
+            border-color: var(--error-color);
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .option-card.correct::after { content: "✓"; font-weight: bold; font-size: 1.2rem; }
+        .option-card.incorrect::after { content: "✗"; font-weight: bold; font-size: 1.2rem; }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+            min-width: 150px;
+        }
+
+        .btn-solution { background-color: #34495e; }
+        .btn-reset { background-color: #95a5a6; }
+        button:hover { opacity: 0.9; }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.3rem; }
+            .option-card { font-size: 0.9rem; padding: 12px; }
+            .container { padding: 15px; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Stil-Check: Wann nutzt man ЯВЛЯТЬСЯ?</h1>
+
+    <div class="instructions">
+        Das Verb <strong>ЯВЛЯТЬСЯ</strong> ist sehr offiziell. In welchen Situationen ist es angemessen? 
+        Klicke auf die passenden Beispiele. Die Liste wird bei jedem Neustart neu gemischt.
+    </div>
+
+    <div class="options-grid" id="options-container">
+        <!-- Optionen werden per JS geladen -->
+    </div>
+
+    <div class="controls">
+        <button class="btn-solution" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn-reset" onclick="resetGame()">Neu mischen</button>
+    </div>
+</div>
+
+<script>
+    // Liste der Situationen (Formell = richtig für ЯВЛЯТЬСЯ)
+    const situations = [
+        { text: "Offizieller Lebenslauf (Резюме)", isFormal: true },
+        { text: "Wissenschaftliche Arbeit (Статья)", isFormal: true },
+        { text: "Geschäftsbericht (Отчёт)", isFormal: true },
+        { text: "Antrag bei einer Behörde", isFormal: true },
+        { text: "Juristischer Vertrag", isFormal: true },
+        { text: "Nachricht an einen engen Freund", isFormal: false },
+        { text: "Telefonat mit den Eltern", isFormal: false },
+        { text: "Bestellung im Restaurant", isFormal: false },
+        { text: "Smalltalk auf einer Party", isFormal: false },
+        { text: "Kommentar in sozialen Medien", isFormal: false },
+        { text: "Einkaufsliste schreiben", isFormal: false }
+    ];
+
+    let currentItems = [];
+
+    // Fisher-Yates Shuffle Algorithmus
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function renderOptions() {
+        const container = document.getElementById('options-container');
+        container.innerHTML = '';
+        
+        // Liste mischen
+        currentItems = shuffleArray([...situations]);
+        
+        currentItems.forEach((sit, index) => {
+            const card = document.createElement('div');
+            card.className = 'option-card';
+            card.textContent = sit.text;
+            card.id = 'sit-' + index;
+            card.onclick = () => checkOption(index);
+            container.appendChild(card);
+        });
+    }
+
+    function checkOption(index) {
+        const card = document.getElementById('sit-' + index);
+        const isCorrect = currentItems[index].isFormal;
+
+        if (isCorrect) {
+            card.classList.add('correct');
+            card.classList.remove('incorrect');
+        } else {
+            card.classList.add('incorrect');
+            card.classList.remove('correct');
+        }
+    }
+
+    function showSolution() {
+        currentItems.forEach((sit, index) => {
+            const card = document.getElementById('sit-' + index);
+            if (sit.isFormal) {
+                card.classList.add('correct');
+                card.classList.remove('incorrect');
+            } else {
+                card.classList.add('incorrect');
+                card.classList.remove('correct');
+            }
+        });
+    }
+
+    function resetGame() {
+        renderOptions();
+    }
+
+    // Initialisierung beim Laden
+    window.onload = renderOptions;
+</script>
+
+</body>
+</html>
