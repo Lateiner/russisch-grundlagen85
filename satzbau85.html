@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Satzbaumeister</title>
+    <style>
+        :root {
+            --primary: #6f42c1;
+            --success: #28a745;
+            --error: #dc3545;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            background: white;
+            max-width: 700px;
+            width: 100%;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+        }
+
+        .header { text-align: center; margin-bottom: 20px; }
+        
+        .progress-bar {
+            height: 8px;
+            background: #eee;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        #progress { height: 100%; background: var(--primary); width: 0%; transition: 0.3s; }
+
+        .instruction {
+            background: #f0ebf8;
+            padding: 15px;
+            border-left: 5px solid var(--primary);
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        /* Wort-Container */
+        .word-area {
+            min-height: 80px;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            background: #fafafa;
+        }
+
+        .pool-area {
+            background: #fff;
+            border: 2px solid #eee;
+            min-height: 60px;
+        }
+
+        .word-chip {
+            padding: 10px 18px;
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 25px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .word-chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            background: var(--primary);
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn-check { background: var(--success); color: white; }
+        .btn-check:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-solution { background: #6c757d; color: white; }
+        .btn-reset { background: #343a40; color: white; }
+
+        #feedback {
+            text-align: center;
+            height: 24px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        @media (max-width: 480px) {
+            .word-chip { font-size: 0.95rem; padding: 8px 14px; }
+            .container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2 style="margin:0; color: var(--primary);">Satzbaumeister 🛠️</h2>
+        <p id="counter" style="color: #666; margin: 5px;">Aufgabe 1 von 8</p>
+    </div>
+
+    <div class="progress-bar"><div id="progress"></div></div>
+
+    <div class="instruction">
+        <b>Aufgabe:</b> Klicke die Wörter in der richtigen Reihenfolge an, um einen grammatikalisch korrekten Satz zu bilden.
+    </div>
+
+    <div id="feedback"></div>
+
+    <!-- Hier baut der Schüler den Satz zusammen -->
+    <div class="word-area" id="target-area"></div>
+
+    <!-- Hier liegen die verfügbaren Wörter -->
+    <div class="word-area pool-area" id="pool-area"></div>
+
+    <div class="controls">
+        <button class="btn-check" id="check-btn" onclick="checkSentence()" disabled>Prüfen</button>
+        <button class="btn-solution" onclick="showSolution()">Lösung</button>
+        <button class="btn-reset" onclick="resetCurrent()">Wiederholen</button>
+    </div>
+    
+    <button class="btn-reset" style="margin-top:10px; width:100%" onclick="restartGame()">Ganz von vorn beginnen</button>
+</div>
+
+<script>
+    const allTasks = [
+        { words: ["Весной", "проявляется", "аллергия"], correct: "Весной проявляется аллергия" },
+        { words: ["Он", "занимается", "спортом"], correct: "Он занимается спортом" },
+        { words: ["Мы", "интересуемся", "музыкой"], correct: "Мы интересуемся музыкой" },
+        { words: ["Она", "кажется", "уставшей"], correct: "Она кажется uставшей" },
+        { words: ["Иван", "гордится", "сыном"], correct: "Иван гордится сыном" },
+        { words: ["Учитель", "руководит", "классом"], correct: "Учитель руководит классоm" },
+        { words: ["Анна", "увлекается", "чтением"], correct: "Анна увлекается чтениеm" },
+        { words: ["Это", "является", "ошибкой"], correct: "Это является ошибкой" }
+    ];
+
+    let currentTaskIndex = 0;
+    let userWords = [];
+
+    function initTask() {
+        if (currentTaskIndex >= allTasks.length) {
+            showFinal();
+            return;
+        }
+
+        userWords = [];
+        const task = allTasks[currentTaskIndex];
+        
+        document.getElementById('counter').textContent = `Aufgabe ${currentTaskIndex + 1} von ${allTasks.length}`;
+        document.getElementById('progress').style.width = `${(currentTaskIndex / allTasks.length) * 100}%`;
+        document.getElementById('feedback').textContent = "";
+        document.getElementById('target-area').innerHTML = "";
+        document.getElementById('check-btn').disabled = true;
+
+        // Wörter mischen
+        const shuffled = [...task.words].sort(() => Math.random() - 0.5);
+        
+        const pool = document.getElementById('pool-area');
+        pool.innerHTML = "";
+        shuffled.forEach(word => {
+            const span = document.createElement('div');
+            span.className = "word-chip";
+            span.textContent = word;
+            span.onclick = () => moveToTarget(word, span);
+            pool.appendChild(span);
+        });
+    }
+
+    function moveToTarget(word, element) {
+        userWords.push(word);
+        element.style.display = "none";
+        
+        const target = document.getElementById('target-area');
+        const span = document.createElement('div');
+        span.className = "word-chip";
+        span.textContent = word;
+        span.onclick = () => removeFromTarget(word, span, element);
+        target.appendChild(span);
+        
+        checkButtonState();
+    }
+
+    function removeFromTarget(word, span, originalElement) {
+        userWords = userWords.filter(w => w !== word); // Vereinfacht für dieses Beispiel
+        span.remove();
+        originalElement.style.display = "block";
+        checkButtonState();
+    }
+
+    function checkButtonState() {
+        document.getElementById('check-btn').disabled = userWords.length !== allTasks[currentTaskIndex].words.length;
+    }
+
+    function checkSentence() {
+        const userString = userWords.join(" ");
+        const correctString = allTasks[currentTaskIndex].correct;
+        const feedback = document.getElementById('feedback');
+
+        if (userString === correctString) {
+            feedback.textContent = "Richtig! ✨";
+            feedback.style.color = "var(--success)";
+            setTimeout(() => {
+                currentTaskIndex++;
+                initTask();
+            }, 1500);
+        } else {
+            feedback.textContent = "Fast! Versuche eine andere Reihenfolge.";
+            feedback.style.color = "var(--error)";
+        }
+    }
+
+    function showSolution() {
+        const feedback = document.getElementById('feedback');
+        feedback.textContent = "Lösung: " + allTasks[currentTaskIndex].correct;
+        feedback.style.color = "var(--primary)";
+        
+        setTimeout(() => {
+            currentTaskIndex++;
+            initTask();
+        }, 3000);
+    }
+
+    function resetCurrent() {
+        initTask();
+    }
+
+    function restartGame() {
+        currentTaskIndex = 0;
+        initTask();
+    }
+
+    function showFinal() {
+        document.getElementById('progress').style.width = "100%";
+        document.getElementById('target-area').innerHTML = "<h3>Ausgezeichnet! Du bist ein Satzbaumeister. 🏆</h3>";
+        document.getElementById('pool-area').innerHTML = "";
+        document.getElementById('check-btn').style.display = "none";
+    }
+
+    // Start
+    initTask();
+</script>
+
+</body>
+</html>
