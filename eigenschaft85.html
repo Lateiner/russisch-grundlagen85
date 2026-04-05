@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eigenschaften-Zuordnung: ПРОЯВИТЬ</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-style: normal;
+        }
+
+        .container {
+            max-width: 850px;
+            width: 100%;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            font-style: normal;
+        }
+
+        .instructions {
+            background: #eef2f3;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border-left: 5px solid var(--accent-color);
+            font-style: normal;
+        }
+
+        /* Wort-Pool oben */
+        .word-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 15px;
+            background: #f1f2f6;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 2px dashed #ccc;
+        }
+
+        .word-tile {
+            background: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 2px solid var(--accent-color);
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary-color);
+            transition: all 0.2s;
+            user-select: none;
+            font-style: normal;
+        }
+
+        .word-tile.selected {
+            background: var(--accent-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .word-tile.matched {
+            opacity: 0.3;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        /* Satz-Liste */
+        .sentence-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sentence-item {
+            display: grid;
+            grid-template-columns: 1fr 150px;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #fff;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-style: normal;
+            transition: all 0.3s;
+        }
+
+        .sentence-text {
+            line-height: 1.4;
+            font-style: normal;
+        }
+
+        .drop-zone {
+            height: 45px;
+            border: 2px dashed #bdc3c7;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            background: #f9f9f9;
+            cursor: pointer;
+            font-style: normal;
+        }
+
+        .drop-zone.filled {
+            border-style: solid;
+            border-color: var(--accent-color);
+            background: #ebf5fb;
+        }
+
+        /* Feedback */
+        .correct { background-color: #d4edda !important; border-color: var(--success-color) !important; }
+        .incorrect { background-color: #f8d7da !important; border-color: var(--error-color) !important; }
+
+        /* Controls */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            font-size: 1rem;
+            font-style: normal;
+        }
+
+        .btn-sol { background-color: #34495e; }
+        .btn-reset { background-color: #95a5a6; }
+
+        @media (max-width: 600px) {
+            .sentence-item { grid-template-columns: 1fr; }
+            .drop-zone { width: 100%; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Eigenschaften-Zuordnung</h1>
+    
+    <div class="instructions">
+        Welche Eigenschaft hat die Person in der Situation gezeigt (проявил / проявила)? 
+        Klicke zuerst ein Wort oben an, dann die passende Lücke im Satz.
+    </div>
+
+    <div id="word-pool" class="word-pool">
+        <!-- Wörter -->
+    </div>
+
+    <div id="sentence-list" class="sentence-list">
+        <!-- Sätze -->
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-sol" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn btn-reset" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { id: 1, word: "смелость", text: "Мальчик спас котёнка на оживлённой дороге." },
+        { id: 2, word: "понимание", text: "Преподаватель разрешил студенту сдать экзамен позже из-за болезни." },
+        { id: 3, word: "терпение", text: "Он спокойно ждал своей очереди три часа и не жаловался." },
+        { id: 4, word: "интерес", text: "Студент задавал много вопросов после очень трудной лекции." },
+        { id: 5, word: "инициативу", text: "Сотрудник сам предложил новый план развития компании." },
+        { id: 6, word: "внимание", text: "Он заметил маленькую ошибку, которую никто не видел." }
+    ];
+
+    let selectedWordObj = null;
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function initGame() {
+        const pool = document.getElementById('word-pool');
+        const list = document.getElementById('sentence-list');
+        pool.innerHTML = '';
+        list.innerHTML = '';
+        selectedWordObj = null;
+
+        const shuffledWords = shuffle([...data]);
+        const shuffledSentences = shuffle([...data]);
+
+        shuffledWords.forEach(item => {
+            const tile = document.createElement('div');
+            tile.className = 'word-tile';
+            tile.textContent = item.word;
+            tile.id = 'word-' + item.id;
+            tile.onclick = () => selectWord(item, tile);
+            pool.appendChild(tile);
+        });
+
+        shuffledSentences.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'sentence-item';
+            div.innerHTML = `
+                <div class="sentence-text">${item.text}</div>
+                <div class="drop-zone" id="zone-${item.id}" onclick="dropWord(${item.id})">---</div>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    function selectWord(item, tile) {
+        document.querySelectorAll('.word-tile').forEach(t => t.classList.remove('selected'));
+        selectedWordObj = { item, tile };
+        tile.classList.add('selected');
+    }
+
+    function dropWord(sentenceId) {
+        if (!selectedWordObj) return;
+
+        const zone = document.getElementById('zone-' + sentenceId);
+        zone.textContent = selectedWordObj.item.word;
+        zone.classList.add('filled');
+
+        if (selectedWordObj.item.id === sentenceId) {
+            zone.className = 'drop-zone filled correct';
+            selectedWordObj.tile.classList.add('matched');
+            selectedWordObj.tile.classList.remove('selected');
+            selectedWordObj = null;
+        } else {
+            zone.className = 'drop-zone filled incorrect';
+            setTimeout(() => {
+                if (zone.className.includes('incorrect')) {
+                    zone.textContent = '---';
+                    zone.className = 'drop-zone';
+                }
+            }, 1000);
+        }
+    }
+
+    function showSolution() {
+        data.forEach(item => {
+            const zone = document.getElementById('zone-' + item.id);
+            const tile = document.getElementById('word-' + item.id);
+            zone.textContent = item.word;
+            zone.className = 'drop-zone filled correct';
+            tile.classList.add('matched');
+        });
+    }
+
+    function resetGame() {
+        initGame();
+    }
+
+    // Start
+    initGame();
+</script>
+
+</body>
+</html>
