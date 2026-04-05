@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Trainer: Sprachgefühl & Transfer</title>
+    <style>
+        :root {
+            --primary: #fd7e14; /* Orange für Transfer/Verständnis */
+            --success: #28a745;
+            --error: #dc3545;
+            --bg: #fff5eb;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .card {
+            background: white;
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            margin-bottom: 25px;
+        }
+        #progress { height: 100%; background: var(--primary); width: 0%; transition: 0.4s; }
+
+        .question-text {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            min-height: 80px;
+            color: #333;
+        }
+
+        .btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .choice-btn {
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            cursor: pointer;
+            background: white;
+            transition: 0.2s;
+        }
+
+        .choice-btn.wahr:hover { border-color: var(--success); color: var(--success); }
+        .choice-btn.falsch:hover { border-color: var(--error); color: var(--error); }
+
+        .explanation {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            margin: 20px 0;
+            display: none;
+            border: 1px solid #eee;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #6c757d;
+            color: white;
+        }
+
+        .restart { background: #343a40; }
+
+        @media (max-width: 480px) {
+            .btn-grid { grid-template-columns: 1fr; }
+            .question-text { font-size: 1.05rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="counter" style="font-weight: bold; color: var(--primary); margin-bottom: 5px;">Check 1/8</div>
+    <div class="progress-bar"><div id="progress"></div></div>
+
+    <div class="question-text" id="question">
+        Lade Frage...
+    </div>
+
+    <div class="btn-grid" id="btn-container">
+        <button class="choice-btn wahr" onclick="handleChoice(true)">WAHR</button>
+        <button class="choice-btn falsch" onclick="handleChoice(false)">FALSCH</button>
+    </div>
+
+    <div id="explanation-box" class="explanation"></div>
+
+    <div class="controls">
+        <button class="control-btn" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="control-btn restart" onclick="restart()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        {
+            q: "Das Verb <b>являться</b> wird oft in einem informellen Gespräch beim Kaffee genutzt.",
+            a: false,
+            info: "<b>Falsch.</b> Das Verb ist sehr formell (Amtsdeutsch). Im Alltag nutzt man eher das Wort 'быть' oder lässt das Verb ganz weg."
+        },
+        {
+            q: "Nach dem Verb <b>являться</b> steht das Substantiv immer im <b>Instrumental</b>.",
+            a: true,
+            info: "<b>Wahr.</b> Das ist die wichtigste grammatikalische Regel für dieses Verb."
+        },
+        {
+            q: "In einem russischen Gesetzestext ist die Chance hoch, das Verb <b>являться</b> zu finden.",
+            a: true,
+            info: "<b>Wahr.</b> Es wird in offiziellen Definitionen und Dokumenten ständig verwendet."
+        },
+        {
+            q: "Man kann 'являться' gut verwenden, um einem Freund zu sagen: 'Ich bin hungrig'.",
+            a: false,
+            info: "<b>Falsch.</b> Das würde klingen wie: 'Ich stelle ein hungriges Individuum dar'. Viel zu hölzern!"
+        },
+        {
+            q: "Das Verb <b>явиться</b> kann auch bedeuten, dass jemand (offiziell) irgendwo erscheint, z.B. vor Gericht.",
+            a: true,
+            info: "<b>Wahr.</b> 'Явиться в суд' bedeutet offiziell zu einem Termin zu erscheinen."
+        },
+        {
+            q: "Die Vergangenheitsform von 'являться' für eine Frau ist <b>являлась</b>.",
+            a: true,
+            info: "<b>Wahr.</b> Das Verb bildet die Vergangenheit ganz regelmäßig mit der Endung -лась."
+        },
+        {
+            q: "Sätze mit <b>являться</b> klingen im Russischen oft poetisch und romantisch.",
+            a: false,
+            info: "<b>Falsch.</b> Sie klingen eher bürokratisch, sachlich oder wissenschaftlich."
+        },
+        {
+            q: "Im Satz 'Он является моим братом' ist das Wort 'братом' ein Beispiel für den Instrumental.",
+            a: true,
+            info: "<b>Wahr.</b> Die Endung -ом zeigt hier eindeutig den Instrumental Maskulin an."
+        }
+    ];
+
+    let currentIndex = 0;
+
+    function updateUI() {
+        if (currentIndex >= data.length) {
+            showFinal();
+            return;
+        }
+        document.getElementById('question').innerHTML = data[currentIndex].q;
+        document.getElementById('counter').innerText = `Check ${currentIndex + 1}/${data.length}`;
+        document.getElementById('progress').style.width = (currentIndex / data.length) * 100 + "%";
+        document.getElementById('explanation-box').style.display = "none";
+        document.getElementById('btn-container').style.pointerEvents = "auto";
+    }
+
+    function handleChoice(userChoice) {
+        const correct = data[currentIndex].a;
+        const box = document.getElementById('explanation-box');
+        
+        box.style.display = "block";
+        box.innerHTML = data[currentIndex].info;
+        box.style.borderLeft = `5px solid ${userChoice === correct ? 'var(--success)' : 'var(--error)'}`;
+        
+        document.getElementById('btn-container').style.pointerEvents = "none";
+
+        setTimeout(() => {
+            currentIndex++;
+            updateUI();
+        }, 3500);
+    }
+
+    function showSolution() {
+        const box = document.getElementById('explanation-box');
+        box.style.display = "block";
+        box.innerHTML = "<b>Lösung:</b> " + data[currentIndex].info;
+        box.style.borderLeft = "5px solid #6c757d";
+        
+        setTimeout(() => {
+            currentIndex++;
+            updateUI();
+        }, 4000);
+    }
+
+    function restart() {
+        currentIndex = 0;
+        updateUI();
+    }
+
+    function showFinal() {
+        document.getElementById('question').innerHTML = "<b>Glückwunsch!</b><br>Du hast nun ein echtes Gefühl dafür entwickelt, wann man 'являться' benutzt und wann besser nicht. 🎓";
+        document.getElementById('btn-container').style.display = "none";
+        document.getElementById('progress').style.width = "100%";
+        document.getElementById('counter').innerText = "Abgeschlossen";
+    }
+
+    updateUI();
+</script>
+
+</body>
+</html>
