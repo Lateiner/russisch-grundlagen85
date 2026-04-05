@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Trainer: Instrumental-Check</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --error: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #e9ecef;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .app-container {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .progress-container {
+            width: 100%;
+            background: #eee;
+            height: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--success);
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        .rule-info {
+            font-size: 0.85rem;
+            background: #e7f3ff;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 25px;
+        }
+
+        .sentence-box {
+            font-size: 1.4rem;
+            text-align: center;
+            margin: 30px 0;
+            min-height: 60px;
+        }
+
+        .gap {
+            color: var(--primary);
+            font-weight: bold;
+            border-bottom: 2px dashed #ccc;
+            padding: 0 5px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px;
+            font-size: 1.1rem;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        button:hover:not(:disabled) {
+            border-color: var(--primary);
+            background: #f0f7ff;
+        }
+
+        button:disabled { cursor: default; }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .btn-secondary { background: var(--secondary); color: white; border: none; flex: 1; font-size: 0.9rem; }
+        .btn-restart { background: var(--dark); color: white; border: none; flex: 1; font-size: 0.9rem; }
+
+        #feedback {
+            text-align: center;
+            font-weight: bold;
+            height: 20px;
+            margin-bottom: 10px;
+        }
+
+        .correct-ans { color: var(--success); }
+        .wrong-ans { color: var(--error); }
+
+        @media (max-width: 480px) {
+            .sentence-box { font-size: 1.1rem; }
+            .options-grid { grid-template-columns: 1fr; }
+            .app-container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <h2 style="margin:0">Grammatik-Trainer</h2>
+        <p id="counter" style="color: #666;">Frage 1 von 8</p>
+    </div>
+
+    <div class="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+
+    <div class="rule-info">
+        💡 <b>Regel:</b> Das Verb <b>являться</b> verlangt den <b>Instrumental</b>.<br>
+        (Mask/Neut: -ом / -ем | Fem: -ой / -ей | Plural: -ами / -ями)
+    </div>
+
+    <div id="feedback"></div>
+
+    <div class="sentence-box" id="sentence-display">
+        <!-- Wird per JS befüllt -->
+    </div>
+
+    <div class="options-grid" id="options-display">
+        <!-- Wird per JS befüllt -->
+    </div>
+
+    <div class="controls">
+        <button class="btn-secondary" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn-restart" onclick="initGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { s: "Он являлся хорошим студент", a: "ом", info: "Maskulin (hart)" },
+        { s: "Москва является столиц", a: "ей", info: "Feminin (nach Zischlaut)" },
+        { s: "Это не является проблем", a: "ой", info: "Feminin (hart)" },
+        { s: "Они являются специалист", a: "ами", info: "Plural" },
+        { s: "Это является важным пример", a: "ом", info: "Maskulin" },
+        { s: "Она является известной актрис", a: "ой", info: "Feminin" },
+        { s: "Терпение является важным качеств", a: "ом", info: "Neutrum" },
+        { s: "Вы являетесь победител", a: "ем", info: "Maskulin (weich)" }
+    ];
+
+    const allOptions = ["ом", "ой", "ей", "ами", "ем", "ями"];
+    let currentIndex = 0;
+
+    function initGame() {
+        currentIndex = 0;
+        document.getElementById('feedback').textContent = "";
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (currentIndex >= questions.length) {
+            showFinalResult();
+            return;
+        }
+
+        const q = questions[currentIndex];
+        document.getElementById('counter').textContent = `Frage ${currentIndex + 1} von ${questions.length}`;
+        document.getElementById('progress-bar').style.width = `${(currentIndex / questions.length) * 100}%`;
+        
+        document.getElementById('sentence-display').innerHTML = `${q.s}<span class="gap" id="gap-fill">...</span>.`;
+        
+        const optionsArea = document.getElementById('options-display');
+        optionsArea.innerHTML = "";
+        
+        // Buttons mischen ist hier nicht zwingend, wir zeigen immer alle sinnvollen Endungen
+        allOptions.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.textContent = `-${opt}`;
+            btn.onclick = () => checkAnswer(opt, btn);
+            optionsArea.appendChild(btn);
+        });
+    }
+
+    function checkAnswer(selected, btn) {
+        const correct = questions[currentIndex].a;
+        const feedback = document.getElementById('feedback');
+        const gap = document.getElementById('gap-fill');
+
+        if (selected === correct) {
+            feedback.innerHTML = `<span class="correct-ans">Richtig! (${questions[currentIndex].info})</span>`;
+            gap.textContent = selected;
+            gap.style.color = "var(--success)";
+            
+            // Kurze Pause, dann nächste Frage
+            setTimeout(() => {
+                currentIndex++;
+                feedback.textContent = "";
+                loadQuestion();
+            }, 1500);
+        } else {
+            feedback.innerHTML = `<span class="wrong-ans">Leider falsch. Versuch es noch mal!</span>`;
+            btn.style.borderColor = "var(--error)";
+            btn.style.color = "var(--error)";
+            setTimeout(() => {
+                btn.style.borderColor = "#ddd";
+                btn.style.color = "black";
+                feedback.textContent = "";
+            }, 1000);
+        }
+    }
+
+    function showSolution() {
+        const correct = questions[currentIndex].a;
+        const gap = document.getElementById('gap-fill');
+        gap.textContent = correct;
+        gap.style.color = "var(--error)";
+        document.getElementById('feedback').innerHTML = `Lösung: -${correct}`;
+        
+        // Nach 2 Sekunden weiter
+        setTimeout(() => {
+            currentIndex++;
+            loadQuestion();
+        }, 2500);
+    }
+
+    function showFinalResult() {
+        document.getElementById('progress-bar').style.width = "100%";
+        document.getElementById('sentence-display').innerHTML = "✨ Gut gemacht! Alle Sätze sind fertig.";
+        document.getElementById('options-display').innerHTML = "";
+        document.getElementById('counter').textContent = "Abgeschlossen";
+        document.getElementById('feedback').textContent = "";
+    }
+
+    // Start
+    initGame();
+</script>
+
+</body>
+</html>
