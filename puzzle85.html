@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konstruktions-Puzzle: Russisch</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-style: normal;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            font-style: normal;
+        }
+
+        .instructions {
+            background: #eef2f3;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            border-left: 5px solid var(--accent-color);
+            font-style: normal;
+        }
+
+        /* Satz-Bereich (Ziel) */
+        .sentence-area {
+            min-height: 80px;
+            background: #fff;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .sentence-area.correct { background-color: #d4edda; border-color: var(--success-color); }
+        .sentence-area.incorrect { background-color: #f8d7da; border-color: var(--error-color); }
+
+        /* Wort-Pool */
+        .word-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            padding: 20px;
+            background: #f1f2f6;
+            border-radius: 10px;
+            min-height: 60px;
+            margin-bottom: 30px;
+        }
+
+        .word-tile {
+            background: white;
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: 2px solid var(--accent-color);
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--primary-color);
+            transition: all 0.2s;
+            user-select: none;
+            font-style: normal;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .word-tile:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        /* Buttons */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            font-size: 1rem;
+            font-style: normal;
+        }
+
+        .btn-next { background-color: var(--accent-color); }
+        .btn-sol { background-color: #34495e; }
+        .btn-reset { background-color: #95a5a6; }
+
+        .progress {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 15px; }
+            .word-tile { padding: 8px 12px; font-size: 0.9rem; }
+            .btn { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Konstruktions-Puzzle</h1>
+    
+    <div class="instructions">
+        Bilde den korrekten russischen Satz. Klicke die Wörter nacheinander an. Achte auf den Unterschied zwischen Aktiv (проявил) und Reflexiv (проявилась).
+    </div>
+
+    <div id="progress" class="progress">Satz 1 von 6</div>
+    
+    <div id="sentence-target" class="sentence-area">
+        <!-- Hier erscheinen die gewählten Wörter -->
+    </div>
+
+    <div id="pool" class="word-pool">
+        <!-- Hier liegen die verfügbaren Wörter -->
+    </div>
+
+    <div class="controls">
+        <button id="next-btn" class="btn btn-next" onclick="nextSentence()" style="display:none;">Nächster Satz</button>
+        <button class="btn btn-sol" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn btn-reset" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const quizData = [
+        { sentence: ["У", "него", "проявилась", "аллергия"], correct: "У него проявилась аллергия" },
+        { sentence: ["Мальчик", "проявил", "большую", "смелость"], correct: "Мальчик proявил большую смелость" },
+        { sentence: ["У", "неё", "проявились", "новые", "таланты"], correct: "У неё проявились новые таланты" },
+        { sentence: ["Вчера", "он", "проявил", "терпение"], correct: "Вчера он проявил терпение" },
+        { sentence: ["В", "темноте", "проявились", "очертания", "дома"], correct: "В темноte проявились очертания дома" },
+        { sentence: ["Преподаватель", "проявил", "понимание"], correct: "Преподаватель проявил понимание" }
+    ];
+
+    let currentIdx = 0;
+    let selectedWords = [];
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function initSentence() {
+        const pool = document.getElementById('pool');
+        const target = document.getElementById('sentence-target');
+        const nextBtn = document.getElementById('next-btn');
+        
+        target.innerHTML = '';
+        target.className = 'sentence-area';
+        nextBtn.style.display = 'none';
+        selectedWords = [];
+        
+        document.getElementById('progress').textContent = `Satz ${currentIdx + 1} von ${quizData.length}`;
+
+        const data = quizData[currentIdx];
+        const shuffledWords = shuffle([...data.sentence]);
+
+        pool.innerHTML = '';
+        shuffledWords.forEach((word, index) => {
+            const tile = document.createElement('div');
+            tile.className = 'word-tile';
+            tile.textContent = word;
+            tile.onclick = () => moveToTarget(word, tile);
+            pool.appendChild(tile);
+        });
+    }
+
+    function moveToTarget(word, tile) {
+        const target = document.getElementById('sentence-target');
+        
+        selectedWords.push(word);
+        tile.style.display = 'none';
+
+        const newTile = document.createElement('div');
+        newTile.className = 'word-tile';
+        newTile.textContent = word;
+        newTile.onclick = () => moveToPool(word, newTile, tile);
+        target.appendChild(newTile);
+
+        checkSentence();
+    }
+
+    function moveToPool(word, tileInTarget, tileInPool) {
+        const idx = selectedWords.indexOf(word);
+        if (idx > -1) {
+            selectedWords.splice(idx, 1);
+        }
+        tileInTarget.remove();
+        tileInPool.style.display = 'block';
+        
+        document.getElementById('sentence-target').className = 'sentence-area';
+        checkSentence();
+    }
+
+    function checkSentence() {
+        const data = quizData[currentIdx];
+        const target = document.getElementById('sentence-target');
+
+        if (selectedWords.length === data.sentence.length) {
+            const currentSentence = selectedWords.join(' ');
+            if (currentSentence === data.correct) {
+                target.classList.add('correct');
+                document.getElementById('next-btn').style.display = 'inline-block';
+            } else {
+                target.classList.add('incorrect');
+            }
+        }
+    }
+
+    function nextSentence() {
+        currentIdx++;
+        if (currentIdx >= quizData.length) {
+            alert("Hervorragend! Du hast alle Sätze korrekt gebaut.");
+            currentIdx = 0;
+        }
+        initSentence();
+    }
+
+    function showSolution() {
+        const target = document.getElementById('sentence-target');
+        const pool = document.getElementById('pool');
+        const data = quizData[currentIdx];
+
+        target.innerHTML = '';
+        pool.innerHTML = '';
+        selectedWords = [...data.sentence];
+
+        data.sentence.forEach(word => {
+            const tile = document.createElement('div');
+            tile.className = 'word-tile';
+            tile.textContent = word;
+            target.appendChild(tile);
+        });
+
+        target.className = 'sentence-area correct';
+        document.getElementById('next-btn').style.display = 'inline-block';
+    }
+
+    function resetGame() {
+        currentIdx = 0;
+        initSentence();
+    }
+
+    initSentence();
+</script>
+
+</body>
+</html>
