@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russisch-Trainer: Dialog-Vervollständigung</title>
+    <style>
+        :root {
+            --primary: #0056b3;
+            --success: #28a745;
+            --error: #dc3545;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #dee2e6;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            max-width: 650px;
+            width: 100%;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        h2 { text-align: center; color: #333; margin-top: 0; }
+
+        .instruction {
+            font-size: 0.9rem;
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary);
+        }
+
+        /* Dialog-Fenster */
+        .dialog-window {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .bubble {
+            padding: 12px 18px;
+            border-radius: 15px;
+            max-width: 85%;
+            font-size: 1.1rem;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .chef {
+            align-self: flex-start;
+            background: #f0f4f8;
+            color: #2c3e50;
+            border-bottom-left-radius: 2px;
+            border: 1px solid #d1d9e0;
+        }
+
+        .staff {
+            align-self: flex-end;
+            background: #e8f5e9;
+            color: #1b5e20;
+            border-bottom-right-radius: 2px;
+            text-align: right;
+            border: 1px solid #c8e6c9;
+        }
+
+        .name {
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 4px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        /* Lücken */
+        .gap {
+            display: inline-block;
+            min-width: 90px;
+            border-bottom: 2px solid var(--primary);
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 5px;
+            color: var(--primary);
+            transition: 0.2s;
+        }
+
+        .gap.active { background-color: #fff9c4; }
+        .gap.filled { border-bottom: none; color: var(--success); }
+
+        /* Wort-Pool (Buttons) */
+        .pool-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .word-btn {
+            padding: 12px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .word-btn:hover { border-color: var(--primary); background: #f0f7ff; }
+
+        /* Feedback & Bottom-Buttons */
+        #feedback {
+            text-align: center;
+            font-weight: bold;
+            min-height: 24px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+        }
+
+        .btn-sol { background: #6c757d; }
+        .btn-res { background: #343a40; }
+
+        @media (max-width: 480px) {
+            .bubble { font-size: 1rem; max-width: 95%; }
+            .pool-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Dialog-Check 💼</h2>
+    <div class="instruction">
+        <b>Anleitung:</b> Wähle zuerst eine Lücke (...) im Text aus und klicke dann auf das richtige Verb im Pool.
+    </div>
+
+    <div id="feedback"></div>
+
+    <div class="dialog-window">
+        <div class="bubble chef">
+            <span class="name">Chef</span>
+            Иван, кто <span class="gap" id="gap0" onclick="activateGap(0)">...</span> руководителем проекта?
+        </div>
+        <div class="bubble staff">
+            <span class="name">Mitarbeiter</span>
+            В данный момент я <span class="gap" id="gap1" onclick="activateGap(1)">...</span> ответственным лицом.
+        </div>
+        <div class="bubble chef">
+            <span class="name">Chef</span>
+            Хорошо. Эти документы <span class="gap" id="gap2" onclick="activateGap(2)">...</span> приоритетными.
+        </div>
+        <div class="bubble staff">
+            <span class="name">Mitarbeiter</span>
+            Понял. Мои идеи всегда <span class="gap" id="gap3" onclick="activateGap(3)">...</span> полезными для фирмы.
+        </div>
+    </div>
+
+    <div class="pool-grid" id="pool">
+        <!-- Buttons werden per JS gemischt eingefügt -->
+    </div>
+
+    <div class="controls">
+        <button class="btn-action btn-sol" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn-action btn-res" onclick="restart()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const solutions = {
+        0: { word: 'является', hint: "Richtig! 3. Person Singular (wer ist...?)." },
+        1: { word: 'являюсь', hint: "Richtig! 1. Person Singular (ich bin...)." },
+        2: { word: 'являются', hint: "Richtig! 3. Person Plural (Dokumente sind...)." },
+        3: { word: 'являлись', hint: "Richtig! Vergangenheit Plural (Ideen waren...)." }
+    };
+
+    const words = ['является', 'являюсь', 'являются', 'являлись'];
+    let selectedGap = null;
+    let finished = [false, false, false, false];
+
+    function shufflePool() {
+        const poolDiv = document.getElementById('pool');
+        poolDiv.innerHTML = "";
+        
+        // Zufällig mischen
+        const shuffled = [...words].sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach(w => {
+            const btn = document.createElement('button');
+            btn.className = "word-btn";
+            btn.textContent = w;
+            btn.onclick = () => handleChoice(w);
+            poolDiv.appendChild(btn);
+        });
+    }
+
+    function activateGap(idx) {
+        if (finished[idx]) return;
+        selectedGap = idx;
+        
+        // Alle Gaps zurücksetzen, gewähltes hervorheben
+        for(let i=0; i<4; i++) {
+            document.getElementById('gap'+i).classList.remove('active');
+        }
+        document.getElementById('gap'+idx).classList.add('active');
+        document.getElementById('feedback').textContent = "Wähle nun die passende Form unten aus.";
+        document.getElementById('feedback').style.color = "#555";
+    }
+
+    function handleChoice(chosenWord) {
+        if (selectedGap === null) {
+            document.getElementById('feedback').textContent = "⚠️ Klicke zuerst auf eine Lücke (...) im Text!";
+            document.getElementById('feedback').style.color = "var(--error)";
+            return;
+        }
+
+        const feedback = document.getElementById('feedback');
+        const gap = document.getElementById('gap' + selectedGap);
+
+        if (chosenWord === solutions[selectedGap].word) {
+            // Richtig
+            gap.textContent = chosenWord;
+            gap.classList.remove('active');
+            gap.classList.add('filled');
+            finished[selectedGap] = true;
+            feedback.textContent = "✅ " + solutions[selectedGap].hint;
+            feedback.style.color = "var(--success)";
+            selectedGap = null;
+            
+            if (finished.every(v => v === true)) {
+                setTimeout(() => {
+                    feedback.innerHTML = "🎉 <b>Hervorragend!</b> Du hast den Dialog perfekt gelöst.";
+                }, 1000);
+            }
+        } else {
+            // Falsch
+            feedback.textContent = "❌ Das ist grammatikalisch nicht korrekt. Probiere es noch mal!";
+            feedback.style.color = "var(--error)";
+            gap.style.color = "var(--error)";
+            setTimeout(() => { gap.style.color = ""; }, 1000);
+        }
+    }
+
+    function showSolution() {
+        for(let i=0; i<4; i++) {
+            const gap = document.getElementById('gap'+i);
+            gap.textContent = solutions[i].word;
+            gap.classList.add('filled');
+            finished[i] = true;
+        }
+        document.getElementById('feedback').textContent = "Lösung wurde eingeblendet.";
+        document.getElementById('feedback').style.color = "#666";
+    }
+
+    function restart() {
+        selectedGap = null;
+        finished = [false, false, false, false];
+        for(let i=0; i<4; i++) {
+            const gap = document.getElementById('gap'+i);
+            gap.textContent = "...";
+            gap.classList.remove('filled', 'active');
+            gap.style.color = "";
+        }
+        document.getElementById('feedback').textContent = "";
+        shufflePool(); // Neu mischen bei Neustart
+    }
+
+    // Initialer Start
+    shufflePool();
+</script>
+
+</body>
+</html>
