@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontext-Detektiv: Das richtige Verb finden</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-style: normal;
+        }
+
+        .container {
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-style: normal;
+        }
+
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            font-size: 1rem;
+            line-height: 1.6;
+            border-left: 6px solid var(--accent-color);
+            font-style: normal;
+        }
+
+        .detective-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            font-style: normal;
+        }
+
+        .scenario-text {
+            font-size: 1.2rem;
+            line-height: 2;
+            color: var(--primary-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            font-style: normal;
+        }
+
+        .word {
+            padding: 2px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid transparent;
+            font-style: normal;
+        }
+
+        .word:hover:not(.disabled) {
+            background-color: #f0f7ff;
+            border-color: var(--accent-color);
+        }
+
+        /* Feedback-Zustände */
+        .word.correct {
+            background-color: var(--success-color) !important;
+            color: white !important;
+            border-color: var(--success-color);
+        }
+
+        .word.incorrect {
+            background-color: var(--error-color) !important;
+            color: white !important;
+            border-color: var(--error-color);
+        }
+
+        .word.disabled {
+            cursor: default;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 50px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            font-size: 1rem;
+            font-style: normal;
+        }
+
+        .btn-sol { background-color: #34495e; }
+        .btn-reset { background-color: #95a5a6; }
+
+        @media (max-width: 600px) {
+            .scenario-text { font-size: 1.05rem; line-height: 2.2; }
+            .btn { width: 100%; }
+            .controls { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Kontext-Detektiv</h1>
+    
+    <div class="instructions">
+        <strong>Suche das Ziel-Verb:</strong> Welches Wort im Text bedeutet, dass etwas vorher unsichtbar war und jetzt sichtbar ist (oder vorher nicht existierte und jetzt existiert)? 
+        <br><br>
+        Klicke direkt auf das Wort im Text.
+    </div>
+
+    <div id="game-area">
+        <!-- Texte werden hier geladen -->
+    </div>
+
+    <div class="controls">
+        <button class="btn btn-sol" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn btn-reset" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const quizData = [
+        {
+            text: "Весь день шёл дождь, небо было серым. Но вдруг тучи ушли, и на небе появилось яркое солнце.",
+            target: "появилось"
+        },
+        {
+            text: "Я долго ждал ответа. Экран телефона был тёмным. Вдруг на экране появилось новое сообщение от друга.",
+            target: "появилось"
+        },
+        {
+            text: "Зима закончилась. На деревьях появились первые маленькие листья. Природа просыпается.",
+            target: "появились"
+        },
+        {
+            text: "Сначала у него не было особых талантов. Но в детском возрасте у него появились способности к музыke.",
+            target: "появились"
+        },
+        {
+            text: "В комнате никого не было. Но вдруг в дверях появился кот. Мы не знали, как он вошёл.",
+            target: "появился"
+        }
+    ];
+
+    function renderTexts() {
+        const area = document.getElementById('game-area');
+        area.innerHTML = '';
+
+        quizData.forEach((data, qIndex) => {
+            const card = document.createElement('div');
+            card.className = 'detective-card';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'scenario-text';
+            
+            // Text in Wörter zerlegen (Satzzeichen beibehalten)
+            const words = data.text.split(' ');
+            
+            words.forEach((word, wIndex) => {
+                const span = document.createElement('span');
+                span.className = 'word';
+                span.textContent = word;
+                span.id = `w-${qIndex}-${wIndex}`;
+                
+                // Bereinige das Wort von Satzzeichen für den Vergleich
+                const cleanWord = word.replace(/[.,!]/g, "");
+                
+                span.onclick = () => checkWord(span, cleanWord, data.target, qIndex);
+                textDiv.appendChild(span);
+            });
+
+            card.appendChild(textDiv);
+            area.appendChild(card);
+        });
+    }
+
+    function checkWord(element, clickedWord, targetWord, qIndex) {
+        if (element.classList.contains('disabled')) return;
+
+        if (clickedWord === targetWord) {
+            // Richtig: Alle Wörter dieses Textes deaktivieren
+            const allWordsInCard = element.parentElement.querySelectorAll('.word');
+            allWordsInCard.forEach(w => w.classList.add('disabled'));
+            element.classList.add('correct');
+        } else {
+            // Falsch
+            element.classList.add('incorrect');
+            setTimeout(() => {
+                element.classList.remove('incorrect');
+            }, 800);
+        }
+    }
+
+    function showSolution() {
+        quizData.forEach((data, qIndex) => {
+            const spans = document.querySelectorAll(`.detective-card:nth-child(${qIndex + 1}) .word`);
+            spans.forEach(span => {
+                const cleanWord = span.textContent.replace(/[.,!]/g, "");
+                span.classList.add('disabled');
+                if (cleanWord === data.target) {
+                    span.classList.add('correct');
+                }
+            });
+        });
+    }
+
+    function resetGame() {
+        renderTexts();
+    }
+
+    // Initialer Start
+    renderTexts();
+</script>
+
+</body>
+</html>
