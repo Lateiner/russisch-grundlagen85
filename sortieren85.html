@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stil-Sortierer: Sofort-Feedback</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --neutral-color: #3498db;
+            --official-color: #e67e22;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+        }
+
+        .instructions {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Satz-Pool */
+        .pool {
+            background: #dfe6e9;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 80px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 25px;
+            border: 2px dashed #b2bec3;
+        }
+
+        .sentence-card {
+            background: var(--card-bg);
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            user-select: none;
+            border: 2px solid transparent;
+            font-size: 1rem;
+        }
+
+        .sentence-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .sentence-card.selected {
+            border-color: var(--neutral-color);
+            background-color: #e1f5fe;
+        }
+
+        /* Spalten-Layout */
+        .game-board {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .column {
+            background: #fff;
+            border-radius: 10px;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-top: 5px solid #ccc;
+            cursor: pointer;
+        }
+
+        .column#col-neutral { border-top-color: var(--neutral-color); }
+        .column#col-official { border-top-color: var(--official-color); }
+
+        .column h2 {
+            text-align: center;
+            font-size: 1.1rem;
+            margin: 0 0 10px 0;
+            pointer-events: none;
+        }
+
+        .column-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        /* Feedback-Zustände */
+        .correct { 
+            background-color: #d4edda !important; 
+            border-color: var(--success-color) !important; 
+            color: #155724;
+        }
+        .incorrect { 
+            background-color: #f8d7da !important; 
+            border-color: var(--error-color) !important; 
+            color: #721c24;
+        }
+
+        /* Buttons */
+        .controls {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .solution-btn { background-color: #34495e; }
+        .reset-btn { background-color: #95a5a6; }
+        button:hover { opacity: 0.9; }
+
+        /* Mobil-Optimierung */
+        @media (max-width: 600px) {
+            .game-board {
+                grid-template-columns: 1fr;
+            }
+            .column {
+                min-height: 150px;
+            }
+            .sentence-card {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>БЫТЬ vs. ЯВЛЯТЬСЯ</h1>
+    
+    <div class="instructions">
+        Klicke einen Satz an und klicke dann auf die Spalte, in die er gehört. Du erhältst sofort eine Rückmeldung.
+    </div>
+
+    <div id="pool" class="pool"></div>
+
+    <div class="game-board">
+        <div class="column" id="target-neutral" onclick="handleColumnClick('neutral')">
+            <h2>Нейтральный стиль</h2>
+            <div id="col-neutral" class="column-content"></div>
+        </div>
+        <div class="column" id="target-official" onclick="handleColumnClick('official')">
+            <h2>Официальный стиль</h2>
+            <div id="col-official" class="column-content"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="solution-btn" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="reset-btn" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { id: 1, text: "Я был студентом.", style: "neutral" },
+        { id: 2, text: "Я являлся студентом.", style: "official" },
+        { id: 3, text: "Он был учителем.", style: "neutral" },
+        { id: 4, text: "Он являлся учителем.", style: "official" },
+        { id: 5, text: "Мы были друзьями.", style: "neutral" },
+        { id: 6, text: "Мы являлись друзьями.", style: "official" },
+        { id: 7, text: "Она была директором.", style: "neutral" },
+        { id: 8, text: "Она являлась директором.", style: "official" }
+    ];
+
+    let selectedId = null;
+
+    function initGame() {
+        const pool = document.getElementById('pool');
+        pool.innerHTML = '';
+        document.getElementById('col-neutral').innerHTML = '';
+        document.getElementById('col-official').innerHTML = '';
+        selectedId = null;
+        
+        // Zufälliges Mischen
+        const shuffled = [...data].sort(() => Math.random() - 0.5);
+        
+        shuffled.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'sentence-card';
+            card.textContent = item.text;
+            card.id = 'card-' + item.id;
+            card.onclick = (e) => {
+                e.stopPropagation();
+                selectCard(item.id);
+            };
+            pool.appendChild(card);
+        });
+    }
+
+    function selectCard(id) {
+        // Alte Auswahl aufheben
+        if (selectedId) {
+            const oldCard = document.getElementById('card-' + selectedId);
+            if (oldCard) oldCard.classList.remove('selected');
+        }
+        
+        selectedId = id;
+        document.getElementById('card-' + id).classList.add('selected');
+    }
+
+    function handleColumnClick(targetStyle) {
+        if (selectedId === null) return;
+        
+        const card = document.getElementById('card-' + selectedId);
+        const itemData = data.find(d => d.id === selectedId);
+        const targetContainer = document.getElementById('col-' + targetStyle);
+        
+        // Karte verschieben
+        card.classList.remove('selected');
+        targetContainer.appendChild(card);
+        
+        // Sofortiges Feedback
+        if (itemData.style === targetStyle) {
+            card.classList.add('correct');
+            card.classList.remove('incorrect');
+        } else {
+            card.classList.add('incorrect');
+            card.classList.remove('correct');
+        }
+        
+        selectedId = null;
+    }
+
+    function showSolution() {
+        selectedId = null;
+        data.forEach(item => {
+            const card = document.getElementById('card-' + item.id);
+            const correctContainer = document.getElementById('col-' + item.style);
+            
+            card.classList.remove('selected', 'incorrect');
+            card.classList.add('correct');
+            correctContainer.appendChild(card);
+        });
+    }
+
+    function resetGame() {
+        initGame();
+    }
+
+    // Start
+    initGame();
+</script>
+
+</body>
+</html>
