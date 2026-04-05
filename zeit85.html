@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeitstrahl-Zuordnung: ЯВЛЯТЬСЯ</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --past-color: #9b59b6;
+            --present-color: #3498db;
+            --future-color: #e67e22;
+            --success-bg: #d4edda;
+            --error-bg: #f8d7da;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .instructions {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        /* Wort-Pool */
+        .pool {
+            background: #dfe6e9;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 80px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 25px;
+            border: 2px dashed #b2bec3;
+        }
+
+        .verb-card {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+            user-select: none;
+            border: 2px solid transparent;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .verb-card.selected {
+            border-color: #333;
+            background-color: #fff9c4;
+            transform: scale(1.05);
+        }
+
+        /* Kategorien / Spalten */
+        .timeline {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .column {
+            background: #fff;
+            border-radius: 10px;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-top: 6px solid #ccc;
+        }
+
+        .column#col-past { border-top-color: var(--past-color); }
+        .column#col-present { border-top-color: var(--present-color); }
+        .column#col-future { border-top-color: var(--future-color); }
+
+        .column h2 {
+            text-align: center;
+            font-size: 1rem;
+            margin: 0 0 15px 0;
+            color: var(--primary-color);
+        }
+
+        .column-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 150px;
+        }
+
+        /* Feedback */
+        .correct { 
+            background-color: var(--success-bg) !important; 
+            border-color: #28a745 !important;
+            color: #155724;
+        }
+        .incorrect { 
+            background-color: var(--error-bg) !important; 
+            border-color: #dc3545 !important;
+            color: #721c24;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn-solution { background-color: #34495e; }
+        .btn-reset { background-color: #95a5a6; }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .timeline {
+                grid-template-columns: 1fr;
+            }
+            .column {
+                min-height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Zeitstrahl-Zuordnung: ЯВЛЯТЬСЯ</h1>
+    
+    <div class="instructions">
+        Ordne die Verbformen der richtigen Zeitform zu. Klicke zuerst ein Wort an und dann das passende Feld (Vergangenheit, Gegenwart oder Zukunft).
+    </div>
+
+    <div id="pool" class="pool"></div>
+
+    <div class="timeline">
+        <div class="column" onclick="moveToColumn('past')">
+            <h2>Прошедшее время<br>(Vergangenheit)</h2>
+            <div id="col-past" class="column-content"></div>
+        </div>
+        <div class="column" onclick="moveToColumn('present')">
+            <h2>Настоящее время<br>(Gegenwart)</h2>
+            <div id="col-present" class="column-content"></div>
+        </div>
+        <div class="column" onclick="moveToColumn('future')">
+            <h2>Будущее время<br>(Zukunft)</h2>
+            <div id="col-future" class="column-content"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-solution" onclick="showSolution()">Lösung anzeigen</button>
+        <button class="btn-reset" onclick="resetGame()">Neustart</button>
+    </div>
+</div>
+
+<script>
+    const verbData = [
+        { id: 1, text: "являлся", tense: "past" },
+        { id: 2, text: "являлась", tense: "past" },
+        { id: 3, text: "являлось", tense: "past" },
+        { id: 4, text: "являлись", tense: "past" },
+        { id: 5, text: "являюсь", tense: "present" },
+        { id: 6, text: "являешься", tense: "present" },
+        { id: 7, text: "является", tense: "present" },
+        { id: 8, text: "являемся", tense: "present" },
+        { id: 9, text: "являетесь", tense: "present" },
+        { id: 10, text: "являются", tense: "present" },
+        { id: 11, text: "буду являться", tense: "future" },
+        { id: 12, text: "будет являться", tense: "future" },
+        { id: 13, text: "будут являться", tense: "future" }
+    ];
+
+    let selectedId = null;
+
+    function initGame() {
+        const pool = document.getElementById('pool');
+        pool.innerHTML = '';
+        document.getElementById('col-past').innerHTML = '';
+        document.getElementById('col-present').innerHTML = '';
+        document.getElementById('col-future').innerHTML = '';
+        selectedId = null;
+
+        // Mischen
+        const shuffled = [...verbData].sort(() => Math.random() - 0.5);
+
+        shuffled.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'verb-card';
+            card.textContent = item.text;
+            card.id = 'verb-' + item.id;
+            card.onclick = (e) => {
+                e.stopPropagation();
+                selectCard(item.id);
+            };
+            pool.appendChild(card);
+        });
+    }
+
+    function selectCard(id) {
+        if (selectedId) {
+            document.getElementById('verb-' + selectedId).classList.remove('selected');
+        }
+        selectedId = id;
+        document.getElementById('verb-' + id).classList.add('selected');
+    }
+
+    function moveToColumn(targetTense) {
+        if (selectedId === null) return;
+
+        const card = document.getElementById('verb-' + selectedId);
+        const itemInfo = verbData.find(v => v.id === selectedId);
+        const targetContainer = document.getElementById('col-' + targetTense);
+
+        card.classList.remove('selected');
+        targetContainer.appendChild(card);
+
+        // Sofortiges Feedback
+        if (itemInfo.tense === targetTense) {
+            card.classList.add('correct');
+            card.classList.remove('incorrect');
+        } else {
+            card.classList.add('incorrect');
+            card.classList.remove('correct');
+        }
+
+        selectedId = null;
+    }
+
+    function showSolution() {
+        selectedId = null;
+        verbData.forEach(item => {
+            const card = document.getElementById('verb-' + item.id);
+            const targetContainer = document.getElementById('col-' + item.tense);
+            
+            card.classList.remove('selected', 'incorrect');
+            card.classList.add('correct');
+            targetContainer.appendChild(card);
+        });
+    }
+
+    function resetGame() {
+        initGame();
+    }
+
+    // Initialer Start
+    initGame();
+</script>
+
+</body>
+</html>
